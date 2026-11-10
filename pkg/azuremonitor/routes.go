@@ -21,6 +21,7 @@ const (
 	azurePortal              = types.RouteAzurePortal
 	traceExemplar            = types.RouteTraceExemplar
 	azureMonitorBatchMetrics = types.RouteAzureMonitorBatchMetrics
+	azureHealthModels        = types.RouteAzureHealthModels
 )
 
 func getAzureMonitorRoutes(settings *azsettings.AzureSettings, credentials azcredentials.AzureCredentials, jsonData json.RawMessage) (map[string]types.AzRoute, error) {
@@ -111,6 +112,14 @@ func getAzureMonitorRoutes(settings *azsettings.AzureSettings, credentials azcre
 		traceExemplar:            logAnalyticsRoute,
 		azurePortal:              portalRoute,
 		azureMonitorBatchMetrics: metricsDataPlaneRoute,
+	}
+
+	if azureCloud == azsettings.AzurePublic {
+		routes[azureHealthModels] = types.AzRoute{
+			URL:     "https://data.cloudhealth.azure.com",
+			Scopes:  []string{"https://data.cloudhealth.azure.com/.default"},
+			Headers: map[string]string{"x-ms-app": "Grafana"},
+		}
 	}
 
 	return routes, nil

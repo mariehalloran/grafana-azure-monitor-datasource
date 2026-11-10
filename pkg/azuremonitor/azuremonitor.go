@@ -198,6 +198,18 @@ func NewInstanceSettings(clientProvider *httpclient.Provider, executors map[stri
 			model.Services[azureMonitorBatchMetrics] = batchService
 		}
 
+		if _, ok := routesForModel[azureHealthModels]; ok {
+			service, err := getDatasourceService(ctx, &settings, azureSettings, clientProvider, model, azureHealthModels, logger)
+			if err != nil {
+				return nil, err
+			}
+			// A redirect must not receive the Azure token from the authentication middleware.
+			service.HTTPClient.CheckRedirect = func(_ *http.Request, _ []*http.Request) error {
+				return http.ErrUseLastResponse
+			}
+			model.Services[azureHealthModels] = service
+		}
+
 		return model, nil
 	}
 }

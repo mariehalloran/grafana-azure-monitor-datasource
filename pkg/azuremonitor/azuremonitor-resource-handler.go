@@ -156,6 +156,68 @@ func (s *DataSource) handleResourceReq(subDataSource string) func(rw http.Respon
 	}
 }
 
+func (s *DataSource) handleHealthModelsResourceReq(rw http.ResponseWriter, req *http.Request, dataplaneURL, resourcePath string) {
+	if req.Method != http.MethodGet {
+		rw.Header().Set("Allow", http.MethodGet)
+		writeErrorResponse(rw, http.StatusMethodNotAllowed, "the Health Models resource route only supports GET requests")
+		return
+	}
+
+	endpoint, err := url.Parse(dataplaneURL)
+	if err != nil || endpoint.Scheme != "https" || endpoint.User != nil || endpoint.Fragment != "" ||
+		(endpoint.Port() != "" && endpoint.Port() != "443") ||
+		!strings.HasSuffix(strings.ToLower(endpoint.Hostname()), ".data.cloudhealth.azure.com") {
+		writeErrorResponse(rw, http.StatusBadRequest, "dataplaneUrl must be an HTTPS CloudHealth endpoint")
+		return
+	}
+	operation, err := url.Parse(resourcePath)
+	if err != nil || operation.IsAbs() || operation.Host != "" || operation.User != nil || operation.Fragment != "" {
+		writeErrorResponse(rw, http.StatusBadRequest, "path must be relative to the dataplane endpoint")
+		return
+	}
+	target := endpoint.JoinPath(operation.EscapedPath())
+	query := target.Query()
+	for key, values := range operation.Query() {
+		query[key] = values
+	}
+	for key, values := range req.URL.Query() {
+		if key != "dataplaneUrl" && key != "path" {
+			query[key] = values
+		}
+	}
+	target.RawQuery = query.Encode()
+
+	service, ok := s.info.Services[azureHealthModels]
+	if !ok {
+		writeErrorResponse(rw, http.StatusInternalServerError, fmt.Sprintf("no service configured for %s", azureHealthModels))
+		return
+	}
+
+	upstreamReq, err := http.NewRequestWithContext(req.Context(), req.Method, target.String(), req.Body)
+	if err != nil {
+		writeErrorResponse(rw, http.StatusBadRequest, err.Error())
+		return
+	}
+	upstreamReq.ContentLength = req.ContentLength
+	upstreamReq.GetBody = req.GetBody
+	for _, name := range []string{"Accept", "Content-Type", "Content-Encoding"} {
+		if values, ok := req.Header[name]; ok {
+			upstreamReq.Header[name] = values
+		}
+	}
+	upstreamReq.Host = upstreamReq.URL.Host
+
+	if executor, ok := s.executors[azureHealthModels]; ok {
+		_, err = executor.ResourceRequest(rw, upstreamReq, service.HTTPClient)
+	} else {
+		proxy := httpServiceProxy{logger: s.logger}
+		_, err = proxy.Do(rw, upstreamReq, service.HTTPClient)
+	}
+	if err != nil {
+		s.logger.Error("error in resource request", "error", err)
+	}
+}
+
 // newResourceMux provides route definitions shared with the frontend.
 // Check: /public/app/plugins/datasource/azuremonitor/utils/common.ts <routeNames>
 func (s *DataSource) newResourceMux() *http.ServeMux {
@@ -163,5 +225,11 @@ func (s *DataSource) newResourceMux() *http.ServeMux {
 	mux.HandleFunc("/azuremonitor/", s.handleResourceReq(azureMonitor))
 	mux.HandleFunc("/loganalytics/", s.handleResourceReq(azureLogAnalytics))
 	mux.HandleFunc("/resourcegraph/", s.handleResourceReq(azureResourceGraph))
+	healthModels := func(rw http.ResponseWriter, req *http.Request) {
+		params := req.URL.Query()
+		s.handleHealthModelsResourceReq(rw, req, params.Get("dataplaneUrl"), params.Get("path"))
+	}
+	mux.HandleFunc("/healthmodels", healthModels)
+	mux.HandleFunc("/healthmodels/", healthModels)
 	return mux
 }

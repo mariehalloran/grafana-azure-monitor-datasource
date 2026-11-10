@@ -54,6 +54,24 @@
       }
     },
     {
+      "id": "jsonData_healthModelsDataplaneUrl",
+      "key": "healthModelsDataplaneUrl",
+      "label": "Health Models dataplane URL",
+      "description": "HTTPS endpoint ending in .data.cloudhealth.azure.com for the experimental Health Models query editor. Configure through provisioning until ARM endpoint discovery is available. Supported in Azure public cloud only.",
+      "valueType": "string",
+      "target": "jsonData",
+      "tags": ["experimental", "provisioning"]
+    },
+    {
+      "id": "jsonData_healthModelsEntityPath",
+      "key": "healthModelsEntityPath",
+      "label": "Health Models entity path",
+      "description": "Entity-health operation path relative to the Health Models dataplane endpoint, including any required API-version query parameter. Configure through provisioning.",
+      "valueType": "string",
+      "target": "jsonData",
+      "tags": ["experimental", "provisioning"]
+    },
+    {
       "id": "jsonData_interval",
       "key": "interval",
       "description": "Default query interval reported to Grafana. Parsed by the backend into `AzureMonitorSettings`.",
@@ -307,7 +325,13 @@
       "id": "monitor",
       "title": "Azure Monitor",
       "order": 2,
-      "fieldRefs": ["jsonData_subscriptionId", "jsonData_basicLogsEnabled", "jsonData_batchAPIEnabled"]
+      "fieldRefs": [
+        "jsonData_subscriptionId",
+        "jsonData_basicLogsEnabled",
+        "jsonData_batchAPIEnabled",
+        "jsonData_healthModelsDataplaneUrl",
+        "jsonData_healthModelsEntityPath"
+      ]
     },
     {
       "id": "additional-settings",

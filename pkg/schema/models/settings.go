@@ -13,6 +13,8 @@ type AzureMonitorDataSourceSettings struct {
 	SubscriptionId               string            `json:"subscriptionId"`
 	BasicLogsEnabled             bool              `json:"basicLogsEnabled"`
 	BatchAPIEnabled              bool              `json:"batchAPIEnabled"`
+	HealthModelsDataplaneUrl      string            `json:"healthModelsDataplaneUrl"`
+	HealthModelsEntityPath        string            `json:"healthModelsEntityPath"`
 	AzureLogAnalyticsSameAs      bool              `json:"azureLogAnalyticsSameAs"`
 	LogAnalyticsTenantId         string            `json:"logAnalyticsTenantId"`
 	LogAnalyticsClientId         string            `json:"logAnalyticsClientId"`

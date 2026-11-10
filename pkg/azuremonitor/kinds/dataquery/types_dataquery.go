@@ -483,6 +483,8 @@ type AzureHealthModelsQuery struct {
 	HealthModelResourceId *string `json:"healthModelResourceId,omitempty"`
 	// Type of health model query to run.
 	QueryType *AzureHealthModelsQueryType `json:"queryType,omitempty"`
+	// Discovered dataplane endpoint for the selected Health Model.
+	DataplaneUrl *string `json:"dataplaneUrl,omitempty"`
 }
 
 // NewAzureHealthModelsQuery creates a new AzureHealthModelsQuery object.
